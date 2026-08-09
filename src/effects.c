@@ -1,8 +1,37 @@
 #include "effects.h"
 
 #include <math.h>
+#include <string.h>
 
 #define TAU 6.28318530717958647692f
+
+typedef struct PaletteDefinition {
+    const char *name;
+    const char *command;
+    float hue;
+    float hue_range;
+    float saturation;
+    float minimum_value;
+} PaletteDefinition;
+
+static const PaletteDefinition palette_definitions[EFFECT_PALETTE_COUNT] = {
+    { "Rainbow", ":rainbow", 0.000f, 0.000f, 0.00f, 1.00f },
+    { "Red",     ":red",     0.000f, 0.000f, 0.76f, 0.78f },
+    { "Orange",  ":orange",  0.075f, 0.000f, 0.78f, 0.78f },
+    { "Yellow",  ":yellow",  0.145f, 0.000f, 0.72f, 0.80f },
+    { "Green",   ":green",   0.340f, 0.000f, 0.72f, 0.76f },
+    { "Blue",    ":blue",    0.600f, 0.000f, 0.72f, 0.78f },
+    { "Indigo",  ":indigo",  0.700f, 0.000f, 0.68f, 0.76f },
+    { "Violet",  ":violet",  0.790f, 0.000f, 0.68f, 0.78f },
+    { "Cyan",    ":cyan",    0.505f, 0.000f, 0.78f, 0.82f },
+    { "Magenta", ":magenta", 0.875f, 0.000f, 0.76f, 0.78f },
+    { "White",   ":white",   0.570f, 0.000f, 0.05f, 0.70f },
+    { "Amber",   ":amber",   0.105f, 0.000f, 0.82f, 0.70f },
+    { "Pink",    ":pink",    0.940f, 0.000f, 0.58f, 0.78f },
+    { "Terminal", ":terminal", 0.305f, 0.065f, 0.86f, 0.48f },
+    { "Ice",     ":ice",     0.485f, 0.095f, 0.42f, 0.72f },
+    { "Fire",    ":fire",    0.000f, 0.150f, 0.90f, 0.62f }
+};
 
 static EffectColor rgba(int r, int g, int b, int a)
 {
@@ -10,8 +39,49 @@ static EffectColor rgba(int r, int g, int b, int a)
     return color;
 }
 
-static EffectColor hsv(float hue, float saturation, float value, int alpha)
+static bool IsValidPalette(EffectPalette palette)
 {
+    return palette >= EFFECT_PALETTE_RAINBOW &&
+           palette < EFFECT_PALETTE_COUNT;
+}
+
+const char *EffectPaletteName(EffectPalette palette)
+{
+    return IsValidPalette(palette) ? palette_definitions[palette].name
+                                   : "Unknown";
+}
+
+const char *EffectPaletteCommand(EffectPalette palette)
+{
+    return IsValidPalette(palette) ? palette_definitions[palette].command : "";
+}
+
+bool EffectPaletteFromCommand(const char *command, EffectPalette *palette)
+{
+    if (command == NULL || palette == NULL) return false;
+
+    for (int i = 0; i < EFFECT_PALETTE_COUNT; ++i) {
+        if (strcmp(command, palette_definitions[i].command) == 0) {
+            *palette = (EffectPalette)i;
+            return true;
+        }
+    }
+    return false;
+}
+
+EffectColor EffectPaletteColor(EffectPalette palette, float hue,
+                               float saturation, float value, int alpha)
+{
+    if (IsValidPalette(palette) && palette != EFFECT_PALETTE_RAINBOW) {
+        const PaletteDefinition *definition = &palette_definitions[palette];
+        float source_hue = hue - floorf(hue);
+        float shade = 0.5f + 0.5f * sinf(source_hue * TAU);
+        hue = definition->hue + source_hue * definition->hue_range;
+        saturation = definition->saturation;
+        value *= definition->minimum_value +
+                 (1.0f - definition->minimum_value) * shade;
+    }
+
     float h = hue - floorf(hue);
     float sector = h * 6.0f;
     int index = (int)floorf(sector);
@@ -56,8 +126,9 @@ void EffectDrawSphere(const EffectCanvas *c, float time)
         float wobble = 1.0f + 0.055f * sinf(time * 1.7f + (float)i * 1.91f);
         float perspective = 1.0f + rz * 0.16f;
         float size = 1.1f + (rz + 1.0f) * 1.15f;
-        EffectColor color = hsv((float)i / (float)count + time * 0.035f,
-                                0.72f, 1.0f, 105 + (int)((rz + 1.0f) * 70.0f));
+        EffectColor color = EffectPaletteColor(
+            c->palette, (float)i / (float)count + time * 0.035f,
+            0.72f, 1.0f, 105 + (int)((rz + 1.0f) * 70.0f));
         c->circle(c->user, cx + rx * radius * wobble * perspective,
                   cy + ry * radius * wobble * perspective, size, color);
     }
@@ -75,8 +146,9 @@ void EffectDrawVortex(const EffectCanvas *c, float time)
         float u = (float)ring / (float)rings;
         float radius = max_radius * powf(u, 0.82f);
         float spin = time * (1.28f - u * 0.78f) + u * 4.7f;
-        EffectColor color = hsv(u * 0.72f - time * 0.06f, 0.68f, 1.0f,
-                                190 - ring * 5);
+        EffectColor color = EffectPaletteColor(
+            c->palette, u * 0.72f - time * 0.06f, 0.68f, 1.0f,
+            190 - ring * 5);
 
         for (int side = 0; side < sides; ++side) {
             float a = spin + TAU * (float)side / (float)sides;
@@ -107,8 +179,9 @@ void EffectDrawWaves(const EffectCanvas *c, float time)
         float amplitude = 16.0f + (float)wave * 2.5f;
         float frequency = 1.45f + (float)wave * 0.17f;
         float phase = time * (1.15f + (float)wave * 0.11f) + (float)wave * 0.9f;
-        EffectColor color = hsv((float)wave / (float)wave_count + 0.56f,
-                                0.64f, 1.0f, 180);
+        EffectColor color = EffectPaletteColor(
+            c->palette, (float)wave / (float)wave_count + 0.56f,
+            0.64f, 1.0f, 180);
 
         for (int segment = 0; segment < segments; ++segment) {
             float x1 = c->width * (float)segment / (float)segments;
@@ -133,8 +206,9 @@ void EffectDrawAmbience(const EffectCanvas *c, float time)
         float x = c->width * (0.5f + 0.42f * sinf(seed + time * (0.055f + i * 0.003f)));
         float y = c->height * (0.5f + 0.38f * cosf(seed * 1.37f + time * 0.071f));
         float radius = 8.0f + 8.0f * (0.5f + 0.5f * sinf(seed * 2.1f));
-        EffectColor glow = hsv((float)i / (float)lights + time * 0.012f,
-                               0.58f, 1.0f, 12);
+        EffectColor glow = EffectPaletteColor(
+            c->palette, (float)i / (float)lights + time * 0.012f,
+            0.58f, 1.0f, 12);
         EffectColor core = glow;
         core.a = 80;
 
@@ -159,7 +233,8 @@ void EffectDrawSpectrum(const EffectCanvas *c, float time)
         float pulse = 0.50f + 0.22f * sinf(time * 2.4f + (float)i * 0.58f)
                       + 0.16f * sinf(time * 1.13f - (float)i * 0.31f);
         float height = 16.0f + fmaxf(0.0f, pulse) * c->height * 0.60f;
-        EffectColor color = hsv(u + time * 0.045f, 0.78f, 1.0f, 215);
+        EffectColor color = EffectPaletteColor(
+            c->palette, u + time * 0.045f, 0.78f, 1.0f, 215);
         EffectColor reflection = color;
         reflection.a = 32;
         c->rectangle(c->user, (float)i * bar_width + gap * 0.5f,
