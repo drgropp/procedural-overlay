@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set "TOOLS=C:\raylib\w64devkit\bin"
+set "TOOLS=C:\w64devkit\bin"
 set "PATH=%TOOLS%;%PATH%"
 
 "%TOOLS%\cmake.exe" -S . -B build -G "MinGW Makefiles" ^

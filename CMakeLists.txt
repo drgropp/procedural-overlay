@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-set(RAYLIB_ROOT "C:/raylib/raylib" CACHE PATH "Path to the raylib source tree")
+set(RAYLIB_ROOT "C:/Users/michael flynn/Documents/raylib/raylib" CACHE PATH "Path to the raylib source tree")
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
 add_subdirectory("${RAYLIB_ROOT}" "${CMAKE_BINARY_DIR}/raylib" EXCLUDE_FROM_ALL)

@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "effects.h"
+#include <stddef.h>
 
 #include <stdbool.h>
 
