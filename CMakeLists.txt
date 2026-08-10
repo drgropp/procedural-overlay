@@ -21,3 +21,19 @@ target_link_libraries(procedural_overlay PRIVATE raylib)
 if(MINGW)
     target_compile_options(procedural_overlay PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(palette_tests
+        tests/palette_tests.c
+        src/effects.c
+    )
+    target_include_directories(palette_tests PRIVATE src)
+    if(NOT MSVC)
+        target_link_libraries(palette_tests PRIVATE m)
+    endif()
+    if(MINGW)
+        target_compile_options(palette_tests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME palette_commands_and_colors COMMAND palette_tests)
+endif()

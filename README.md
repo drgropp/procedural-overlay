@@ -71,9 +71,41 @@ The executable is produced at `build/procedural_overlay.exe`.
 - Press **Left Arrow** or **Right Arrow** to switch visual modes.
 - Click the **<** or **>** buttons to switch modes when the controls are shown.
 - Press **H** or **F11** to show or hide the controls.
+- Type `:` to open command entry, type a command, and press **Enter** to run it.
+- Press **Backspace** while entering a command to correct it.
 - Drag the top strip to move the window.
 - Drag an edge or corner to resize the window.
 - Press **Esc** or **Alt+F4** to exit.
+
+### Color commands
+
+Color commands change the current visual immediately without restarting it or
+resetting its animation:
+
+- `:red`, `:orange`, `:yellow`, `:green`, `:blue`, `:indigo`, and
+  `:violet` select shaded versions of the original color set.
+- `:cyan` selects a bright cyan/terminal-blue palette.
+- `:magenta` selects a vivid magenta palette.
+- `:white` selects a luminous white and soft-gray palette.
+- `:amber` selects a warm amber/orange CRT-style palette.
+- `:pink` selects a pink palette.
+- `:terminal` uses dark terminal greens with bright green highlights.
+- `:ice` uses related pale blue and cyan shades.
+- `:fire` distributes animated red, orange, and yellow shades.
+- `:rainbow` is the default and restores the original multicolor behavior.
+- `:color` reports the currently active palette without changing it.
+- `:help` shows all palette commands in a compact temporary overlay.
+
+Commands are normalized to lowercase as they are typed. An unrecognized
+command displays a short message, such as `Unknown command: :purplee`, without
+interrupting the current visual. Selecting a palette briefly displays its name,
+for example `Palette: Terminal`.
+
+Non-rainbow palettes reuse each effect's existing color inputs to produce
+lighter and darker shades while retaining the original alpha and glow layers.
+Terminal, ice, and fire additionally map those inputs across a narrow related
+hue range. Rainbow bypasses this mapping so its original appearance is
+unchanged.
 
 ## Project structure
 
@@ -85,6 +117,8 @@ procedural-overlay/
 |   |-- main.c                Window, input, and mode selection
 |   |-- effects.c             Procedural effect implementations
 |   `-- effects.h             Effect interface
+|-- tests/
+|   `-- palette_tests.c       Palette command and color-mapping tests
 `-- build/                    Generated build files (created locally)
     `-- procedural_overlay.exe
 ```
